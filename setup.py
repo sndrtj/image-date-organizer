@@ -11,7 +11,8 @@ setup(
     python_requires=">=3.5",
     install_requires=[
         "click>=7.0",
-        "pillow>=5.4.1"
+        "pillow>=5.4.1",
+        "pendulum>=2.0.4"
     ],
     entry_points={
         "console_scripts": [
