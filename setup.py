@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="image-date-organizer",
+    name="image_date_organizer",
     description="Import and organize images by EXIF/XMP date.",
     author="Sander Bollen",
     version="0.1.0-dev",
@@ -12,5 +12,10 @@ setup(
     install_requires=[
         "click>=7.0",
         "pillow>=5.4.1"
-    ]
+    ],
+    entry_points={
+        "console_scripts": [
+            "image-date-organizer = image_date_organizer.cli:main"
+        ]
+    }
 )
