@@ -1,0 +1,14 @@
+language: python
+dist: xenial
+matrix:
+  include:
+    - python: "3.5"
+    - python: "3.6"
+    - python: "3.7"
+install:
+  - pip install -r requirements-dev.txt
+  - pip install .
+script:
+  - flake8 --statistics tests rna_cd
+  - coverage run --source=image_date_organizer -m py.test -v tests
+  - coverage report -m
