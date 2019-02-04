@@ -9,6 +9,6 @@ install:
   - pip install -r requirements-dev.txt
   - pip install .
 script:
-  - flake8 --statistics tests rna_cd
+  - flake8 --statistics tests image_date_organizer
   - coverage run --source=image_date_organizer -m py.test -v tests
   - coverage report -m
