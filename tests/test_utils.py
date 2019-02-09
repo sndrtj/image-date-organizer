@@ -11,11 +11,6 @@ import pytest
 from image_date_organizer.utils import sha256_file
 
 
-@pytest.fixture
-def rand_file(data_dir) -> Path:
-    return data_dir / Path("random.txt")
-
-
 def test_sha256_file(rand_file):
     assert sha256_file(rand_file) == ("9d55a64228d8d47d2b944b5e76b298bcc65b1"
                                       "919956231fc34fb8c87350c2de1")
