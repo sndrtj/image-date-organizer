@@ -15,6 +15,8 @@ def get_package_version():
 
 
 def sha256_file(path: Path, chunksize: int = 4*1024*1024) -> str:
+    if chunksize < 1:
+        raise ValueError("Chunksize must be at least 1.")
     hasher = hashlib.sha256()
     with path.open("rb") as handle:
         while True:
