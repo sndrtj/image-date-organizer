@@ -12,7 +12,8 @@ setup(
     install_requires=[
         "click>=7.0",
         "pillow>=5.4.1",
-        "pendulum>=2.0.4"
+        "pendulum>=2.0.4",
+        "python-magic>=0.4.15"
     ],
     entry_points={
         "console_scripts": [

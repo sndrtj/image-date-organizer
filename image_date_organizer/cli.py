@@ -8,6 +8,7 @@ image_date_organizer.cli
 import pathlib
 import click
 
+from .organize import organize
 from .utils import get_package_version
 
 
@@ -44,4 +45,4 @@ def main(source: pathlib.Path, dest: pathlib.Path, remove_source: bool,
     If no such metadata fields are available, we will fall back to mtime as
     the source of date.
     """
-    pass
+    organize(source, dest, remove_source)
