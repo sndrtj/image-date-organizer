@@ -8,6 +8,7 @@ image_date_organizer.organize
 from datetime import datetime
 from pathlib import Path
 import shutil
+import logging
 
 import magic
 import pendulum
@@ -15,6 +16,8 @@ from PIL import Image
 from PIL.ExifTags import TAGS
 
 from .utils import sha256_file
+
+logger = logging.getLogger("image-date-organizer")
 
 
 _exif_date_field = next(k for k, v in TAGS.items() if v == "DateTime")
@@ -60,9 +63,17 @@ def get_date_from_image(path: Path) -> datetime:
         exif_data = image._getexif()
         if _exif_date_field in exif_data:
             return pendulum.parse(exif_data[_exif_date_field])
+        logger.warning(
+            "Could not determine creation date for {0}, "
+            "defaulting to mtime".format(str(path))
+        )
         mtime = path.stat().st_mtime
         return pendulum.from_timestamp(mtime)
     else:
+        logger.warning(
+            "Could not determine creation date for {0}, "
+            "defaulting to mtime".format(str(path))
+        )
         mtime = path.stat().st_mtime
         return pendulum.from_timestamp(mtime)
 
@@ -77,15 +88,22 @@ def organize_file(source: Path, destination: Path,
                   remove_source: bool = False):
     """Organize a single file."""
     if not is_image(source):
+        logger.warning("{0} is not an image, skipping".format(str(source)))
         return  # skipping since is not an image
     date = get_date_from_image(source)
     dest_dir = create_date_path(destination, date)
     dest_dir.mkdir(parents=True, exist_ok=True)  # ensure dir exists
     dest_path = dest_dir / source.name
+    logger.debug("Determined destination path as {0}".format(str(dest_path)))
     if dest_path.exists():
+        logger.warning("{0} already exists on destination, skipping".format(
+            source.name)
+        )
         return  # skipping, since it already exists.
+    logger.info("Copying {0} to {1}".format(str(source), str(dest_path)))
     verify_copy(source, dest_path)
     if remove_source and source.is_file():
+        logger.info("Removing {0}".format(str(source)))
         source.unlink()  # removing source.
 
 
@@ -120,8 +138,10 @@ def organize_dir(source: Path, destination: Path, remove_source: bool = False):
 def organize(source: Path, destination: Path, remove_source: bool = False):
     """Main organizer"""
     if source.is_file():
+        logger.debug("{0} is a file".format(str(source)))
         organize_file(source, destination, remove_source)
     elif source.is_dir():
+        logger.debug("{0} is a directory".format(str(source)))
         organize_dir(source, destination, remove_source)
     else:
         raise NotImplementedError

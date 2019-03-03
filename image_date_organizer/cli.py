@@ -7,9 +7,12 @@ image_date_organizer.cli
 """
 import pathlib
 import click
+import logging
 
 from .organize import organize
 from .utils import get_package_version
+
+logger = logging.getLogger("image-date-organizer")
 
 
 def path_callback(ctx, param, value):
@@ -45,4 +48,10 @@ def main(source: pathlib.Path, dest: pathlib.Path, remove_source: bool,
     If no such metadata fields are available, we will fall back to mtime as
     the source of date.
     """
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=log_level
+    )
+    logger.info("Organizing {0} into destination {1}".format(str(source),
+                                                             str(dest)))
     organize(source, dest, remove_source)
