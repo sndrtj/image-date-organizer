@@ -57,8 +57,11 @@ def verify_copy(source: Path, destination: Path):
 def get_date_from_image(path: Path) -> datetime:
     image = Image.open(path)
     if "exif" in image.info:
-        date_string = image._getexif()[_exif_date_field]
-        return pendulum.parse(date_string)
+        exif_data = image._getexif()
+        if _exif_date_field in exif_data:
+            return pendulum.parse(exif_data[_exif_date_field])
+        mtime = path.stat().st_mtime
+        return pendulum.from_timestamp(mtime)
     else:
         mtime = path.stat().st_mtime
         return pendulum.from_timestamp(mtime)
