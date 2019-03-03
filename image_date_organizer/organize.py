@@ -101,7 +101,13 @@ def organize_file(source: Path, destination: Path,
         )
         return  # skipping, since it already exists.
     logger.info("Copying {0} to {1}".format(str(source), str(dest_path)))
-    verify_copy(source, dest_path)
+    try:
+        verify_copy(source, dest_path)
+    except ValueError:
+        logger.exception("Failed to copy {0} to {1}".format(
+            str(source), str(dest_path))
+        )
+        raise
     if remove_source and source.is_file():
         logger.info("Removing {0}".format(str(source)))
         source.unlink()  # removing source.
