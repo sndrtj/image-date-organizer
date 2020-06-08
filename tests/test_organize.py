@@ -10,8 +10,11 @@ from pathlib import Path
 from datetime import datetime
 
 
-from image_date_organizer.organize import (create_date_path, is_image,
-                                           get_date_from_image)
+from image_date_organizer.organize import (
+    create_date_path,
+    is_image,
+    get_date_from_image,
+)
 
 
 @pytest.fixture

@@ -80,12 +80,10 @@ def get_date_from_image(path: Path) -> datetime:
 
 def create_date_path(root: Path, date: datetime) -> Path:
     """Create path form a root path and a date."""
-    return (root / Path(str(date.year)) / Path(str(date.month)) /
-            Path(str(date.day)))
+    return root / Path(str(date.year)) / Path(str(date.month)) / Path(str(date.day))
 
 
-def organize_file(source: Path, destination: Path,
-                  remove_source: bool = False):
+def organize_file(source: Path, destination: Path, remove_source: bool = False):
     """Organize a single file."""
     if not is_image(source):
         logger.warning("{0} is not an image, skipping".format(str(source)))
@@ -96,16 +94,16 @@ def organize_file(source: Path, destination: Path,
     dest_path = dest_dir / source.name
     logger.debug("Determined destination path as {0}".format(str(dest_path)))
     if dest_path.exists():
-        logger.warning("{0} already exists on destination, skipping".format(
-            source.name)
+        logger.warning(
+            "{0} already exists on destination, skipping".format(source.name)
         )
         return  # skipping, since it already exists.
     logger.info("Copying {0} to {1}".format(str(source), str(dest_path)))
     try:
         verify_copy(source, dest_path)
     except ValueError:
-        logger.exception("Failed to copy {0} to {1}".format(
-            str(source), str(dest_path))
+        logger.exception(
+            "Failed to copy {0} to {1}".format(str(source), str(dest_path))
         )
         raise
     if remove_source and source.is_file():

@@ -12,8 +12,9 @@ from image_date_organizer.utils import sha256_file
 
 
 def test_sha256_file(rand_file):
-    assert sha256_file(rand_file) == ("9d55a64228d8d47d2b944b5e76b298bcc65b1"
-                                      "919956231fc34fb8c87350c2de1")
+    assert sha256_file(rand_file) == (
+        "9d55a64228d8d47d2b944b5e76b298bcc65b1" "919956231fc34fb8c87350c2de1"
+    )
 
 
 def test_sha256_file_not_found():
