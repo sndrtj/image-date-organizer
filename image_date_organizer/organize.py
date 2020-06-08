@@ -9,7 +9,8 @@ from datetime import datetime
 from pathlib import Path
 import shutil
 import logging
-from typing import cast
+import re
+from typing import cast, Optional, Dict
 
 import magic
 import pendulum
@@ -22,6 +23,17 @@ logger = logging.getLogger("image-date-organizer")
 
 
 _exif_date_field = next(k for k, v in TAGS.items() if v == "DateTime")
+
+
+# dictionary of regexes that match file basenames, with one capture group,
+# and the corresponding datetime format belonging to that capture group.
+FILE_BASENAME_DATE_FORMATS: Dict[re.Pattern, str] = {
+    re.compile(r"(\d{8}_\d{6})"): "YYYYMMDD_HHmmss",  # e.g. '20200101_120101.jpg'
+    re.compile(
+        r"Screenshot_(\d{8}-\d{6})_\w.+"
+    ): "YYYYMMDD-HHmmss",  # e.g. 'Screenshot_20200101-120101_Maps.jpg'
+    re.compile(r"IMG-(\d{8})-WA\d+"): "YYYYMMDD",  # e.g. 'IMG-20200101-WA0001.jpg'
+}
 
 
 def is_image(path: Path) -> bool:
@@ -58,25 +70,45 @@ def verify_copy(source: Path, destination: Path) -> None:
         raise ValueError("Source' and destination's contents did not match!")
 
 
+def get_date_from_filename(path: Path) -> Optional[pendulum.DateTime]:
+    """Attempt to get a date from a filename.
+
+    :param path: Path
+    :return: Datetime if we could determine it, else None
+    """
+    for format_re, fmt in FILE_BASENAME_DATE_FORMATS.items():
+        if format_re.match(path.stem) is not None:
+            try:
+                return pendulum.from_format(path.stem, fmt)
+            except ValueError:
+                logger.debug(
+                    f"File with name {path.name} matched regex {format_re.pattern}, "
+                    f"but did not match datetime format {fmt}"
+                )
+
+    return None
+
+
 def get_date_from_image(path: Path) -> pendulum.DateTime:
     image = Image.open(path)
+    date: Optional[pendulum.DateTime] = None
     if "exif" in image.info:
         exif_data = image._getexif()
         if _exif_date_field in exif_data:
-            return cast(pendulum.DateTime, pendulum.parse(exif_data[_exif_date_field]))
+            date = cast(pendulum.DateTime, pendulum.parse(exif_data[_exif_date_field]))
+
+    if date is None:
+        date = get_date_from_filename(path)
+
+    if date is None:
         logger.warning(
             "Could not determine creation date for {0}, "
             "defaulting to mtime".format(str(path))
         )
         mtime = path.stat().st_mtime
-        return pendulum.from_timestamp(mtime)
-    else:
-        logger.warning(
-            "Could not determine creation date for {0}, "
-            "defaulting to mtime".format(str(path))
-        )
-        mtime = path.stat().st_mtime
-        return pendulum.from_timestamp(mtime)
+        date = pendulum.from_timestamp(mtime)
+
+    return date
 
 
 def create_date_path(root: Path, date: datetime) -> Path:
