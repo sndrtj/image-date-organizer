@@ -77,9 +77,10 @@ def get_date_from_filename(path: Path) -> Optional[pendulum.DateTime]:
     :return: Datetime if we could determine it, else None
     """
     for format_re, fmt in FILE_BASENAME_DATE_FORMATS.items():
-        if format_re.match(path.stem) is not None:
+        match = format_re.match(path.stem)
+        if match:
             try:
-                return pendulum.from_format(path.stem, fmt)
+                return pendulum.from_format(match.group(1), fmt)
             except ValueError:
                 logger.debug(
                     f"File with name {path.name} matched regex {format_re.pattern}, "
