@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 import shutil
 import logging
+from typing import cast
 
 import magic
 import pendulum
@@ -23,12 +24,12 @@ logger = logging.getLogger("image-date-organizer")
 _exif_date_field = next(k for k, v in TAGS.items() if v == "DateTime")
 
 
-def is_image(path: Path):
+def is_image(path: Path) -> bool:
     mimetype = magic.from_file(str(path), mime=True)
     return mimetype.split("/")[0] == "image"
 
 
-def verify_copy(source: Path, destination: Path):
+def verify_copy(source: Path, destination: Path) -> None:
     """
     Copy a file, verifying that the copied file's contents are identical
     to the source contents.
@@ -57,12 +58,12 @@ def verify_copy(source: Path, destination: Path):
         raise ValueError("Source' and destination's contents did not match!")
 
 
-def get_date_from_image(path: Path) -> datetime:
+def get_date_from_image(path: Path) -> pendulum.DateTime:
     image = Image.open(path)
     if "exif" in image.info:
         exif_data = image._getexif()
         if _exif_date_field in exif_data:
-            return pendulum.parse(exif_data[_exif_date_field])
+            return cast(pendulum.DateTime, pendulum.parse(exif_data[_exif_date_field]))
         logger.warning(
             "Could not determine creation date for {0}, "
             "defaulting to mtime".format(str(path))
@@ -83,7 +84,7 @@ def create_date_path(root: Path, date: datetime) -> Path:
     return root / Path(str(date.year)) / Path(str(date.month)) / Path(str(date.day))
 
 
-def organize_file(source: Path, destination: Path, remove_source: bool = False):
+def organize_file(source: Path, destination: Path, remove_source: bool = False) -> None:
     """Organize a single file."""
     if not is_image(source):
         logger.warning("{0} is not an image, skipping".format(str(source)))
@@ -111,7 +112,7 @@ def organize_file(source: Path, destination: Path, remove_source: bool = False):
         source.unlink()  # removing source.
 
 
-def organize_dir(source: Path, destination: Path, remove_source: bool = False):
+def organize_dir(source: Path, destination: Path, remove_source: bool = False) -> None:
     """
     Recursively organize a directory.
 
@@ -139,7 +140,7 @@ def organize_dir(source: Path, destination: Path, remove_source: bool = False):
                 raise
 
 
-def organize(source: Path, destination: Path, remove_source: bool = False):
+def organize(source: Path, destination: Path, remove_source: bool = False) -> None:
     """Main organizer"""
     if source.is_file():
         logger.debug("{0} is a file".format(str(source)))

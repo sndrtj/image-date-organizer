@@ -8,6 +8,7 @@ image_date_organizer.cli
 import pathlib
 import click
 import logging
+from typing import Any
 
 from .organize import organize
 from .utils import get_package_version
@@ -15,7 +16,9 @@ from .utils import get_package_version
 logger = logging.getLogger("image-date-organizer")
 
 
-def path_callback(ctx, param, value):
+def path_callback(
+    ctx: click.Context, param: click.Parameter, value: Any
+) -> pathlib.Path:
     """Click fallback function for generating pathlib.Path instances"""
     return pathlib.Path(value)
 
