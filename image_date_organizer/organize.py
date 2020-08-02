@@ -16,6 +16,7 @@ import magic
 import pendulum
 from PIL import Image
 from PIL.ExifTags import TAGS
+import subprocess
 
 from .utils import sha256_file
 
@@ -39,6 +40,11 @@ FILE_BASENAME_DATE_FORMATS: Dict[re.Pattern, str] = {
 def is_image(path: Path) -> bool:
     mimetype = magic.from_file(str(path), mime=True)
     return mimetype.split("/")[0] == "image"
+
+
+def is_mp4(path: Path) -> bool:
+    mimetype = magic.from_file(str(path), mime=True)
+    return mimetype == "video/mp4"
 
 
 def verify_copy(source: Path, destination: Path) -> None:
@@ -99,7 +105,20 @@ def get_date_from_image(path: Path) -> pendulum.DateTime:
             date = cast(pendulum.DateTime, pendulum.parse(exif_data[_exif_date_field]))
 
     if date is None:
-        date = get_date_from_filename(path)
+        date = get_date_from_generic_path(path)
+    return date
+
+
+def get_date_from_generic_path(path: Path) -> pendulum.DateTime:
+    """Get date from any path.
+
+    First tries several known filename patterns. If that fails, we simply return
+    the file's mtime.
+
+    :param path: path
+    :return: datetime.
+    """
+    date = get_date_from_filename(path)
 
     if date is None:
         logger.warning(
@@ -112,6 +131,31 @@ def get_date_from_image(path: Path) -> pendulum.DateTime:
     return date
 
 
+def get_date_from_video(path: Path) -> Optional[pendulum.DateTime]:
+    """Get date from video (MP4) file
+
+    Assumes exiftool utility exists on system.
+
+    :param path: path to extract date of.
+    :return: Datetime.
+    """
+    proc_return = subprocess.run(
+        ["exiftool", path], stdout=subprocess.PIPE, universal_newlines=True
+    )
+    proc_return.check_returncode()
+
+    date: Optional[pendulum.DateTime] = None
+    for line in proc_return.stdout.splitlines():
+        if line.startswith("Create Date"):
+            _, _, date_field = line.partition(":")
+            date = cast(pendulum.DateTime, pendulum.parse(date_field.strip()))
+
+    if date is None:
+        date = get_date_from_generic_path(path)
+
+    return date
+
+
 def create_date_path(root: Path, date: datetime) -> Path:
     """Create path form a root path and a date."""
     return root / Path(str(date.year)) / Path(str(date.month)) / Path(str(date.day))
@@ -119,10 +163,14 @@ def create_date_path(root: Path, date: datetime) -> Path:
 
 def organize_file(source: Path, destination: Path, remove_source: bool = False) -> None:
     """Organize a single file."""
-    if not is_image(source):
-        logger.warning("{0} is not an image, skipping".format(str(source)))
+    if is_image(source):
+        date = get_date_from_image(source)
+    elif is_mp4(source):
+        date = get_date_from_video(source)
+    else:
+        logger.warning("{0} is not an image or a video, skipping".format(str(source)))
         return  # skipping since is not an image
-    date = get_date_from_image(source)
+
     dest_dir = create_date_path(destination, date)
     dest_dir.mkdir(parents=True, exist_ok=True)  # ensure dir exists
     dest_path = dest_dir / source.name

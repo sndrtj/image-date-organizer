@@ -13,11 +13,9 @@ setup(
         "click>=7.0",
         "pillow>=5.4.1",
         "pendulum>=2.0.4",
-        "python-magic>=0.4.15"
+        "python-magic>=0.4.15",
     ],
     entry_points={
-        "console_scripts": [
-            "image-date-organizer = image_date_organizer.cli:main"
-        ]
-    }
+        "console_scripts": ["image-date-organizer = image_date_organizer.cli:main"]
+    },
 )

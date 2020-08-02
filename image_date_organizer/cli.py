@@ -52,16 +52,19 @@ def main(
     log_level: str = "INFO",
 ):
     """
-    Import images from source and organize them into destination by date.
+    Import images and mp4 videos from source and organize them into destination by date.
 
-    source may be either a single file or a directory. In case of the latter,
-    the source directory will be searched recursively for image files.
+    Source may be either a single file or a directory. In case of the latter,
+    the source directory will be searched recursively for image and mp4 files.
 
     Images will be organized first by year, then by month, and lastly by day.
 
     Dates will be taken from EXIF or XMP metadata fields, if available.
     If no such metadata fields are available, we will fall back to mtime as
     the source of date.
+
+    This tool depends on exiftool being installed on your system.
+    See https://exiftool.org/.
     """
     logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=log_level
