@@ -148,7 +148,13 @@ def get_date_from_video(path: Path) -> Optional[pendulum.DateTime]:
     for line in proc_return.stdout.splitlines():
         if line.startswith("Create Date"):
             _, _, date_field = line.partition(":")
-            date = cast(pendulum.DateTime, pendulum.parse(date_field.strip()))
+            try:
+                date = cast(pendulum.DateTime, pendulum.parse(date_field.strip()))
+            except ValueError:
+                logger.warning(
+                    f"Could not determine exif-provided date for {path}. "
+                    f"{date_field} is not a valid date-time."
+                )
 
     if date is None:
         date = get_date_from_generic_path(path)
@@ -163,6 +169,7 @@ def create_date_path(root: Path, date: datetime) -> Path:
 
 def organize_file(source: Path, destination: Path, remove_source: bool = False) -> None:
     """Organize a single file."""
+    logger.debug(f"Organizing {source}")
     if is_image(source):
         date = get_date_from_image(source)
     elif is_mp4(source):
@@ -199,6 +206,7 @@ def organize_dir(source: Path, destination: Path, remove_source: bool = False) -
 
     :raises: RuntimeError when trying to process extremely deep directory tree.
     """
+    logger.debug(f"Organizing {source}")
     for item in source.iterdir():
         if item.is_file():
             organize_file(item, destination, remove_source)
