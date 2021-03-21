@@ -33,7 +33,8 @@ FILE_BASENAME_DATE_FORMATS: Dict[re.Pattern, str] = {
     re.compile(
         r"Screenshot_(\d{8}-\d{6})_\w.+"
     ): "YYYYMMDD-HHmmss",  # e.g. 'Screenshot_20200101-120101_Maps.jpg'
-    re.compile(r"IMG|VID-(\d{8})-WA\d+"): "YYYYMMDD",  # e.g. 'IMG-20200101-WA0001.jpg'
+    re.compile(r"IMG-(\d{8})-WA\d+"): "YYYYMMDD",  # e.g. 'IMG-20200101-WA0001.jpg',
+    re.compile(r"VID-(\d{8})-WA\d+"): "YYYYMMDD",  # e.g. 'VID-20200101-WA0001.mp4'
 }
 
 
