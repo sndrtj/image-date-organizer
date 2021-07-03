@@ -3,7 +3,11 @@ name = "image-date-organizer"
 version = "0.2.0"
 description = "Import and organize images by EXIF/XMP date"
 authors = ["Sander Bollen <sander@sndrtj.eu>"]
-license = "BSD-3-clause"
+license = "BSD-3-Clause"
+
+packages = [
+    {include = "image_date_organizer", from='src'}
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -18,6 +22,9 @@ flake8 = "^3.9.2"
 coverage = "^5.5"
 mypy = "^0.910"
 black = "^21.6b0"
+
+[tool.poetry.scripts]
+image-date-organizer = 'image_date_organizer.cli:main'
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
