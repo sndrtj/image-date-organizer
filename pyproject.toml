@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "image-date-organizer"
-version = "0.2.0"
+version = "0.2.0-dev"
 description = "Import and organize images by EXIF/XMP date"
 authors = ["Sander Bollen <sander@sndrtj.eu>"]
 license = "BSD-3-Clause"
@@ -15,6 +15,7 @@ click = "^8.0.1"
 Pillow = "^8.3.0"
 pendulum = "^2.1.2"
 python-magic = "^0.4.24"
+loguru = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
@@ -22,6 +23,7 @@ flake8 = "^3.9.2"
 coverage = "^5.5"
 mypy = "^0.910"
 black = "^21.6b0"
+types-setuptools = "^57.0.0"
 
 [tool.poetry.scripts]
 image-date-organizer = 'image_date_organizer.cli:main'

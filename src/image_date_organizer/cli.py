@@ -2,18 +2,17 @@
 image_date_organizer.cli
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-:copyright: (c) 2019 Sander Bollen
+:copyright: (c) 2019-2021 Sander Bollen
 :license: BSD-3-clause
 """
 import pathlib
 import click
-import logging
 from typing import Any
 
-from .organize import organize
+from .organize import Organizer, DEFAULT_IMAGE_EXTRACTORS, DEFAULT_VIDEO_EXTRACTORS
 from .utils import get_package_version
 
-logger = logging.getLogger("image-date-organizer")
+from loguru import logger
 
 
 def path_callback(
@@ -35,10 +34,11 @@ def path_callback(
     help="Destination directory",
 )
 @click.option(
-    "--remove-source",
-    is_flag=True,
-    help="Enable to remove the source files after import was " "completed.",
+    "--remove-source / --no-remove-source",
+    help="Enable to remove the source files after import was completed.",
+    default=False,
 )
+@click.option("--dry-run / --no-dry-run", help="Perform a dry run.", default=False)
 @click.option(
     "-l",
     "--log-level",
@@ -49,6 +49,7 @@ def main(
     source: pathlib.Path,
     dest: pathlib.Path,
     remove_source: bool,
+    dry_run: bool,
     log_level: str = "INFO",
 ):
     """
@@ -66,8 +67,11 @@ def main(
     This tool depends on exiftool being installed on your system.
     See https://exiftool.org/.
     """
-    logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=log_level
+    logger.info(f"Organizing {source} into destination {dest}")
+    organizer = Organizer(
+        image_extractors=DEFAULT_IMAGE_EXTRACTORS,
+        video_extractors=DEFAULT_VIDEO_EXTRACTORS,
+        remove_source=remove_source,
+        dry_run=dry_run,
     )
-    logger.info("Organizing {0} into destination {1}".format(str(source), str(dest)))
-    organize(source, dest, remove_source)
+    organizer.organize(source, dest)

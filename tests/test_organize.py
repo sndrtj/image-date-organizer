@@ -13,7 +13,6 @@ from datetime import datetime
 from image_date_organizer.organize import (
     create_date_path,
     is_image,
-    get_date_from_image,
 )
 
 
@@ -35,10 +34,3 @@ def test_jpeg_is_image(jpeg_img):
 
 def test_rand_file_is_not_image(rand_file):
     assert not is_image(rand_file)
-
-
-def test_get_date_from_jpg(jpeg_img):
-    date = get_date_from_image(jpeg_img)
-    assert date.year == 2018
-    assert date.month == 8
-    assert date.day == 17

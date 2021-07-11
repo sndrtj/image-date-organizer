@@ -2,40 +2,181 @@
 image_date_organizer.organize
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:copyright: (c) 2019 Sander Bollen
+:copyright: (c) 2019-2021 Sander Bollen
 :license: BSD-3-clause
 """
-from datetime import datetime
+import pathlib
+import datetime
 from pathlib import Path
 import shutil
-import logging
 import re
-from typing import cast, Optional, Dict
+from typing import Optional, Sequence
 
 import magic
-import pendulum
-from PIL import Image
-from PIL.ExifTags import TAGS
-import subprocess
 
 from .utils import sha256_file
+from .extractors import (
+    Extractor,
+    ExifToolExtractor,
+    ExifImageExtractor,
+    RegexExtractor,
+    MTimeExtractor,
+)
 
-logger = logging.getLogger("image-date-organizer")
+from loguru import logger
 
 
-_exif_date_field = next(k for k, v in TAGS.items() if v == "DateTime")
+DEFAULT_IMAGE_EXTRACTORS = [
+    ExifImageExtractor(),
+    # e.g. '20200101_120101.jpg'
+    RegexExtractor(re.compile(r"(\d{8}_\d{6})"), "YYYYMMDD_HHmmss"),
+    # e.g. 'Screenshot_20200101-120101_Maps.jpg'
+    RegexExtractor(re.compile(r"Screenshot_(\d{8}-\d{6})_\w.+"), "YYYYMMDD-HHmmss"),
+    # e.g. 'IMG-20200101-WA0001.jpg'
+    RegexExtractor(re.compile(r"IMG-(\d{8})-WA\d+"), "YYYYMMDD"),
+    MTimeExtractor(),
+]
+
+DEFAULT_VIDEO_EXTRACTORS = [
+    ExifToolExtractor(),
+    # e.g. 'VID-20200101-WA0001.mp4'
+    RegexExtractor(re.compile(r"VID-(\d{8})-WA\d+"), "YYYYMMDD"),
+    MTimeExtractor(),
+]
 
 
-# dictionary of regexes that match file basenames, with one capture group,
-# and the corresponding datetime format belonging to that capture group.
-FILE_BASENAME_DATE_FORMATS: Dict[re.Pattern, str] = {
-    re.compile(r"(\d{8}_\d{6})"): "YYYYMMDD_HHmmss",  # e.g. '20200101_120101.jpg'
-    re.compile(
-        r"Screenshot_(\d{8}-\d{6})_\w.+"
-    ): "YYYYMMDD-HHmmss",  # e.g. 'Screenshot_20200101-120101_Maps.jpg'
-    re.compile(r"IMG-(\d{8})-WA\d+"): "YYYYMMDD",  # e.g. 'IMG-20200101-WA0001.jpg',
-    re.compile(r"VID-(\d{8})-WA\d+"): "YYYYMMDD",  # e.g. 'VID-20200101-WA0001.mp4'
-}
+class Organizer:
+    """
+    The organizer takes care of actually organizing a source directory to a
+    destination.
+
+    It uses a sequence of extractors for images and videos to accomplish this task.
+    """
+
+    def __init__(
+        self,
+        image_extractors: Sequence[Extractor] = (),
+        video_extractors: Sequence[Extractor] = (),
+        dry_run: bool = False,
+        remove_source: bool = False,
+    ) -> None:
+        """Initialize organizer
+
+        :param image_extractors: Ordered sequence of date extractors to use for
+            images. Dates are extracted in order. I.e, if the 1st extractor manages
+            to extract the date for a particular file, we won't even attempt any of
+            the next extractors.
+        :param video_extractors: Ordered sequence of date extractors to use for
+            videos. Dates are extracted in order. I.e, if the 1st extractor manages
+            to extract the date for a particular file, we won't even attempt any
+            of the next extractors.
+        :param dry_run: Whether to perform a dry run. In a dry run some log messages
+            are printed, but we won't actually copy over any files.
+        :param remove_source: Whether to remove the source path(s) after copying is
+            complete. This parameter is ignored when `dry_run` is set to True.
+        """
+        self.image_extractors = image_extractors
+        self.video_extractors = video_extractors
+        self.dry_run = dry_run
+
+        self.remove_source = remove_source if not self.dry_run else False
+
+    def extract_date(self, path: pathlib.Path) -> Optional[datetime.date]:
+        """Extract the date of a single file
+
+        :param path: path of file for which we should extract the date.
+        :return: Date if file is an image or video and it can be extracted,
+            None otherwise.
+        """
+        if is_image(path):
+            return self._extract_image_date(path)
+        if is_mp4(path):
+            return self._extract_video_date(path)
+        logger.warning(f"{path} is not an image or video, skipping...")
+        return None
+
+    def _extract_image_date(self, path: pathlib.Path) -> Optional[datetime.date]:
+        extractions = (extractor.extract(path) for extractor in self.image_extractors)
+        return next(extractions, None)
+
+    def _extract_video_date(self, path: pathlib.Path) -> Optional[datetime.date]:
+        extractions = (extractor.extract(path) for extractor in self.video_extractors)
+        return next(extractions, None)
+
+    def organize(self, source: Path, destination: Path) -> None:
+        """Main organizer"""
+        if source.is_file():
+            logger.debug(f"{source} is a file")
+            self.organize_file(source, destination)
+        elif source.is_dir():
+            logger.debug(f"{source} is a directory")
+            self.organize_dir(source, destination)
+        else:
+            raise NotImplementedError
+
+    def organize_file(
+        self,
+        source: Path,
+        destination: Path,
+    ) -> None:
+        """Organize a single file."""
+        logger.debug(f"Organizing {source}")
+        date = self.extract_date(source)
+
+        if date is None:
+            return
+
+        dest_dir = create_date_path(destination, date)
+
+        dest_path = dest_dir / source.name
+        logger.debug(f"Determined destination path as {dest_path}")
+        dest_dir.mkdir(parents=True, exist_ok=True)  # ensure dir exists
+        if dest_path.exists():
+            logger.warning(f"{source.name} already exists on destination, skipping")
+            return  # skipping, since it already exists.
+        logger.info(f"Copying {source} to {dest_path}")
+
+        # Return early if we are doing a dry run.
+        if self.dry_run:
+            return
+
+        try:
+            verify_copy(source, dest_path)
+        except ValueError:
+            logger.exception(f"Failed to copy {source} to {dest_path}")
+            raise
+
+        if self.remove_source and source.is_file():
+            logger.info(f"Removing {source}")
+            source.unlink()  # removing source.
+
+    def organize_dir(self, source: Path, destination: Path) -> None:
+        """
+        Recursively organize a directory.
+
+        :raises: RuntimeError when trying to process extremely deep directory tree.
+        """
+        logger.debug(f"Organizing {source}")
+        for item in source.iterdir():
+            if item.is_file():
+                self.organize_file(item, destination)
+            elif item.is_dir():
+                # a little recursion
+                self.organize_dir(item, destination)
+            else:
+                # skipping due to don't know how to handle
+                continue
+
+        if self.remove_source and not self.dry_run:
+            try:
+                source.rmdir()
+            except OSError as error:
+                if str(error).startswith("[Errno 39]"):
+                    # means directory is not empty.
+                    # should warn that source is unremovable.
+                    pass
+                else:
+                    raise
 
 
 def is_image(path: Path) -> bool:
@@ -77,166 +218,6 @@ def verify_copy(source: Path, destination: Path) -> None:
         raise ValueError("Source' and destination's contents did not match!")
 
 
-def get_date_from_filename(path: Path) -> Optional[pendulum.DateTime]:
-    """Attempt to get a date from a filename.
-
-    :param path: Path
-    :return: Datetime if we could determine it, else None
-    """
-    for format_re, fmt in FILE_BASENAME_DATE_FORMATS.items():
-        match = format_re.match(path.stem)
-        if match:
-            try:
-                return pendulum.from_format(match.group(1), fmt)
-            except ValueError:
-                logger.debug(
-                    f"File with name {path.name} matched regex {format_re.pattern}, "
-                    f"but did not match datetime format {fmt}"
-                )
-
-    return None
-
-
-def get_date_from_image(path: Path) -> pendulum.DateTime:
-    image = Image.open(path)
-    date: Optional[pendulum.DateTime] = None
-    if "exif" in image.info:
-        exif_data = image._getexif()
-        if _exif_date_field in exif_data:
-            date = cast(pendulum.DateTime, pendulum.parse(exif_data[_exif_date_field]))
-
-    if date is None:
-        date = get_date_from_generic_path(path)
-    return date
-
-
-def get_date_from_generic_path(path: Path) -> pendulum.DateTime:
-    """Get date from any path.
-
-    First tries several known filename patterns. If that fails, we simply return
-    the file's mtime.
-
-    :param path: path
-    :return: datetime.
-    """
-    date = get_date_from_filename(path)
-
-    if date is None:
-        logger.warning(
-            "Could not determine creation date for {0}, "
-            "defaulting to mtime".format(str(path))
-        )
-        mtime = path.stat().st_mtime
-        date = pendulum.from_timestamp(mtime)
-
-    return date
-
-
-def get_date_from_video(path: Path) -> Optional[pendulum.DateTime]:
-    """Get date from video (MP4) file
-
-    Assumes exiftool utility exists on system.
-
-    :param path: path to extract date of.
-    :return: Datetime.
-    """
-    proc_return = subprocess.run(
-        ["exiftool", path], stdout=subprocess.PIPE, universal_newlines=True
-    )
-    proc_return.check_returncode()
-
-    date: Optional[pendulum.DateTime] = None
-    for line in proc_return.stdout.splitlines():
-        if line.startswith("Create Date"):
-            _, _, date_field = line.partition(":")
-            try:
-                date = cast(pendulum.DateTime, pendulum.parse(date_field.strip()))
-            except ValueError:
-                logger.warning(
-                    f"Could not determine exif-provided date for {path}. "
-                    f"{date_field} is not a valid date-time."
-                )
-
-    if date is None:
-        date = get_date_from_generic_path(path)
-
-    return date
-
-
-def create_date_path(root: Path, date: datetime) -> Path:
+def create_date_path(root: Path, date: datetime.date) -> Path:
     """Create path form a root path and a date."""
     return root / Path(str(date.year)) / Path(str(date.month)) / Path(str(date.day))
-
-
-def organize_file(source: Path, destination: Path, remove_source: bool = False) -> None:
-    """Organize a single file."""
-    logger.debug(f"Organizing {source}")
-    if is_image(source):
-        date = get_date_from_image(source)
-    elif is_mp4(source):
-        date = get_date_from_video(source)
-    else:
-        logger.warning("{0} is not an image or a video, skipping".format(str(source)))
-        return  # skipping since is not an image
-
-    dest_dir = create_date_path(destination, date)
-    dest_dir.mkdir(parents=True, exist_ok=True)  # ensure dir exists
-    dest_path = dest_dir / source.name
-    logger.debug("Determined destination path as {0}".format(str(dest_path)))
-    if dest_path.exists():
-        logger.warning(
-            "{0} already exists on destination, skipping".format(source.name)
-        )
-        return  # skipping, since it already exists.
-    logger.info("Copying {0} to {1}".format(str(source), str(dest_path)))
-    try:
-        verify_copy(source, dest_path)
-    except ValueError:
-        logger.exception(
-            "Failed to copy {0} to {1}".format(str(source), str(dest_path))
-        )
-        raise
-    if remove_source and source.is_file():
-        logger.info("Removing {0}".format(str(source)))
-        source.unlink()  # removing source.
-
-
-def organize_dir(source: Path, destination: Path, remove_source: bool = False) -> None:
-    """
-    Recursively organize a directory.
-
-    :raises: RuntimeError when trying to process extremely deep directory tree.
-    """
-    logger.debug(f"Organizing {source}")
-    for item in source.iterdir():
-        if item.is_file():
-            organize_file(item, destination, remove_source)
-        elif item.is_dir():
-            # a little recursion
-            organize_dir(item, destination, remove_source)
-        else:
-            # skipping due to don't know how to handle
-            continue
-
-    if remove_source:
-        try:
-            source.rmdir()
-        except OSError as error:
-            if str(error).startswith("[Errno 39]"):
-                # means directory is not empty.
-                # should warn that source is unremovable.
-                pass
-            else:
-                raise
-
-
-def organize(source: Path, destination: Path, remove_source: bool = False) -> None:
-    """Main organizer"""
-    if source.is_file():
-        logger.debug("{0} is a file".format(str(source)))
-        organize_file(source, destination, remove_source)
-    elif source.is_dir():
-        logger.debug("{0} is a directory".format(str(source)))
-        organize_dir(source, destination, remove_source)
-    else:
-        raise NotImplementedError
