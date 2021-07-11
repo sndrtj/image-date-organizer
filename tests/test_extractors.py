@@ -1,5 +1,6 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 from image_date_organizer.extractors import ExifImageExtractor
 

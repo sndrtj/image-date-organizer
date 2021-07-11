@@ -5,15 +5,12 @@ test_organize.py
 :copyright: (c) 2019 Sander Bollen
 :license: BSD-3-clause
 """
-import pytest
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
+import pytest
 
-from image_date_organizer.organize import (
-    create_date_path,
-    is_image,
-)
+from image_date_organizer.organize import create_date_path, is_image
 
 
 @pytest.fixture

@@ -6,6 +6,7 @@ test_utils.py
 :license: BSD-3-clause
 """
 from pathlib import Path
+
 import pytest
 
 from image_date_organizer.utils import sha256_file
