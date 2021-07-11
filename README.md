@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/sndrtj/image-date-organizer.svg?branch=master)](https://travis-ci.org/sndrtj/image-date-organizer)
-# image-date-organizer 
+![CI](https://github.com/sndrtj/image-date-organizer/actions/workflows/ci.yml/badge.svg)
 
 I really like to organize my pictures and images in one central place by date.
 
