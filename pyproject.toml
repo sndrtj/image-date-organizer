@@ -24,6 +24,7 @@ coverage = "^5.5"
 mypy = "^0.910"
 black = "^21.6b0"
 types-setuptools = "^57.0.0"
+isort = "^5.9.2"
 
 [tool.poetry.scripts]
 image-date-organizer = 'image_date_organizer.cli:main'
@@ -31,3 +32,11 @@ image-date-organizer = 'image_date_organizer.cli:main'
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3

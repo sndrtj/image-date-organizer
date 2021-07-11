@@ -6,13 +6,13 @@ image_date_organizer.cli
 :license: BSD-3-clause
 """
 import pathlib
-import click
 from typing import Any
 
-from .organize import Organizer, DEFAULT_IMAGE_EXTRACTORS, DEFAULT_VIDEO_EXTRACTORS
-from .utils import get_package_version
-
+import click
 from loguru import logger
+
+from .organize import DEFAULT_IMAGE_EXTRACTORS, DEFAULT_VIDEO_EXTRACTORS, Organizer
+from .utils import get_package_version
 
 
 def path_callback(

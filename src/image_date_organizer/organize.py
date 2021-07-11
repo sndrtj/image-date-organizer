@@ -5,26 +5,24 @@ image_date_organizer.organize
 :copyright: (c) 2019-2021 Sander Bollen
 :license: BSD-3-clause
 """
-import pathlib
 import datetime
-from pathlib import Path
-import shutil
+import pathlib
 import re
+import shutil
+from pathlib import Path
 from typing import Optional, Sequence
 
 import magic
-
-from .utils import sha256_file
-from .extractors import (
-    Extractor,
-    ExifToolExtractor,
-    ExifImageExtractor,
-    RegexExtractor,
-    MTimeExtractor,
-)
-
 from loguru import logger
 
+from .extractors import (
+    ExifImageExtractor,
+    ExifToolExtractor,
+    Extractor,
+    MTimeExtractor,
+    RegexExtractor,
+)
+from .utils import sha256_file
 
 DEFAULT_IMAGE_EXTRACTORS = [
     ExifImageExtractor(),

@@ -6,17 +6,16 @@ image_date_organizer.extractors
 :license: BSD-3-clause
 """
 import abc
-import pathlib
-import pendulum
 import datetime
-from typing import Optional, cast
-from PIL import Image
-from PIL.ExifTags import TAGS
+import pathlib
 import re
 import subprocess
+from typing import Optional, cast
 
-
+import pendulum
 from loguru import logger
+from PIL import Image
+from PIL.ExifTags import TAGS
 
 EXIF_DATE_FIELD = _exif_date_field = next(k for k, v in TAGS.items() if v == "DateTime")
 
