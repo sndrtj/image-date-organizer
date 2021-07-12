@@ -17,7 +17,7 @@ from loguru import logger
 from PIL import Image
 from PIL.ExifTags import TAGS
 
-EXIF_DATE_FIELD = _exif_date_field = next(k for k, v in TAGS.items() if v == "DateTime")
+EXIF_DATE_FIELD = next(k for k, v in TAGS.items() if v == "DateTime")
 
 
 class Extractor(abc.ABC):
