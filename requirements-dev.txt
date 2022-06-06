@@ -1,5 +1,0 @@
-pytest>=4.2.0
-flake8>=3.7.5
-coverage>=4.5.2
-mypy>=0.780
-black>=19.10b

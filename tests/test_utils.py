@@ -6,6 +6,7 @@ test_utils.py
 :license: BSD-3-clause
 """
 from pathlib import Path
+
 import pytest
 
 from image_date_organizer.utils import sha256_file
@@ -13,7 +14,7 @@ from image_date_organizer.utils import sha256_file
 
 def test_sha256_file(rand_file):
     assert sha256_file(rand_file) == (
-        "9d55a64228d8d47d2b944b5e76b298bcc65b1" "919956231fc34fb8c87350c2de1"
+        "9d55a64228d8d47d2b944b5e76b298bcc65b1919956231fc34fb8c87350c2de1"
     )
 
 

@@ -2,11 +2,12 @@
 image_date_organizer.utils
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:copyright: (c) 2019 Sander Bollen
+:copyright: (c) 2019-2021 Sander Bollen
 :license: BSD-3-clause
 """
 import hashlib
 from pathlib import Path
+
 import pkg_resources
 
 

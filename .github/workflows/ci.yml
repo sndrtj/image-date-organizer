@@ -1,0 +1,27 @@
+name: CI
+on: [push]
+jobs:
+  linters:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install poetry
+        run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+      - name: Add poetry to PATH
+        run: echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+      - name: Install depependencies using poetry
+        run: poetry install
+      - name: Check code style with black
+        run: poetry run black --check src tests
+      - name: Check types with mypy
+        run: poetry run mypy src tests
+      - name: Check imports with isort
+        run: poetry run isort --check src tests
+      - name: Run tests with pytest
+        run: poetry run py.test tests
