@@ -39,6 +39,8 @@ DEFAULT_VIDEO_EXTRACTORS = [
     ExifToolExtractor(),
     # e.g. 'VID-20200101-WA0001.mp4'
     RegexExtractor(re.compile(r"VID-(\d{8})-WA\d+"), "YYYYMMDD"),
+    # E.g. # e.g. '20200101_120101.mp4'
+    RegexExtractor(re.compile(r"(\d{8}_\d{6})"), "YYYYMMDD_HHmmss"),
     MTimeExtractor(),
 ]
 
