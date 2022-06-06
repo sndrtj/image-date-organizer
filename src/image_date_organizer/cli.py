@@ -2,7 +2,7 @@
 image_date_organizer.cli
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-:copyright: (c) 2019-2021 Sander Bollen
+:copyright: (c) 2019-2022 Sander Bollen
 :license: BSD-3-clause
 """
 import pathlib
@@ -67,6 +67,7 @@ def main(
     This tool depends on exiftool being installed on your system.
     See https://exiftool.org/.
     """
+    logger.level(log_level)
     logger.info(f"Organizing {source} into destination {dest}")
     organizer = Organizer(
         image_extractors=DEFAULT_IMAGE_EXTRACTORS,

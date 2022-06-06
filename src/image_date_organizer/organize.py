@@ -2,7 +2,7 @@
 image_date_organizer.organize
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:copyright: (c) 2019-2021 Sander Bollen
+:copyright: (c) 2019-2022 Sander Bollen
 :license: BSD-3-clause
 """
 import datetime
@@ -93,13 +93,23 @@ class Organizer:
         logger.warning(f"{path} is not an image or video, skipping...")
         return None
 
+    def _extract_file_date(
+        self, path: pathlib.Path, extractors: Sequence[Extractor]
+    ) -> Optional[datetime.date]:
+        for extractor in extractors:
+            logger.debug(f"Attempting extractor {extractor.__class__.__name__}")
+            extraction = extractor.extract(path)
+            if extraction is not None:
+                return extraction
+
+        logger.info("Could not determine date for any extractor.")
+        return None
+
     def _extract_image_date(self, path: pathlib.Path) -> Optional[datetime.date]:
-        extractions = (extractor.extract(path) for extractor in self.image_extractors)
-        return next(extractions, None)
+        return self._extract_file_date(path, self.image_extractors)
 
     def _extract_video_date(self, path: pathlib.Path) -> Optional[datetime.date]:
-        extractions = (extractor.extract(path) for extractor in self.video_extractors)
-        return next(extractions, None)
+        return self._extract_file_date(path, self.video_extractors)
 
     def organize(self, source: Path, destination: Path) -> None:
         """Main organizer"""

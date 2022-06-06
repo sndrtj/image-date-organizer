@@ -2,7 +2,7 @@
 image_date_organizer.extractors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:copyright: (c) 2019-2021 Sander Bollen
+:copyright: (c) 2019-2022 Sander Bollen
 :license: BSD-3-clause
 """
 import abc
